@@ -6,5 +6,6 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface RacingRepository : JpaRepository<Racing, Long> {
-    fun findById (id: Long?): Racing?
-}
+    fun findById(id: Long?): Racing?
+    fun findByProfessorId(professorId: Long): List<Racing> // Modificado: buscar carreras por profesor
+} // Modificación aplicada aquí

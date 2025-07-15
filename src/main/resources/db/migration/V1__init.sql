@@ -1,9 +1,10 @@
 
-CREATE TABLE IF NOT EXISTS admins (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL,
     username VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    email VARCHAR(150) NOT NULL,
+    password VARCHAR(255),
+    email VARCHAR (50) UNIQUE,
+    photo_url VARCHAR(255),
     PRIMARY KEY (id)
     );
 
@@ -14,16 +15,26 @@ CREATE TABLE IF NOT EXISTS aspirants (
     last_name VARCHAR(255) NOT NULL,
     nui VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(150) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    racing_id BIGINT,
     password VARCHAR(255) NOT NULL
     );
+CREATE TABLE IF NOT EXISTS roles (
+    id SERIAL PRIMARY KEY,
+    roles VARCHAR(25),
+    user_id INT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
 
 CREATE TABLE IF NOT EXISTS racing (
     id SERIAL PRIMARY KEY,
     career VARCHAR (350) NOT NULL,
     aspirants_id INT,
-    admins_id INT,
+    professor_id INT NOT NULL,
     FOREIGN KEY (aspirants_id) REFERENCES aspirants(id),
-    FOREIGN KEY (admins_id) REFERENCES admins(id)
+    FOREIGN KEY (professor_id) REFERENCES users(id)
+
     );
 
 
@@ -40,13 +51,11 @@ CREATE TABLE IF NOT EXISTS questions (
     electricity_q VARCHAR(450) NOT NULL,
     accounting_q VARCHAR(450) NOT NULL,
     networks_q VARCHAR(450) NOT NULL,
+    professor_id BIGINT,
     aspirants_id INT,
-    admins_id INT,
-    FOREIGN KEY (aspirants_id) REFERENCES aspirants(id),
-    FOREIGN KEY (admins_id) REFERENCES admins(id)
+    FOREIGN KEY (aspirants_id) REFERENCES aspirants(id)
+
     );
-
-
 
 
 CREATE TABLE IF NOT EXISTS answer (

@@ -1,22 +1,26 @@
 package com.example.Aplicativo_web.entity
 
+import com.fasterxml.jackson.annotation.JsonBackReference
 import jakarta.persistence.*
+import com.example.Aplicativo_web.entity.UsersEntity
 
 @Entity
 @Table(name = "racing")
-data class Racing(
+class Racing {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null,
+    @Column(updatable = false)
+    var id: Long? = null
 
-    @Column(name = "career", nullable = false, length = 350)
-    var career: String,
+    var career: String? = null
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "aspirants_id")
-    var aspirants: Aspirants? = null,
+    // MODIFICACIÓN: Cambié FetchType.LAZY a FetchType.EAGER para que el profesor se cargue siempre y evitar problemas de null
+    @ManyToOne(fetch = FetchType.EAGER)  // <-- Aquí está el cambio
+    @JoinColumn(name = "professor_id")
+    @JsonBackReference
+    var professor: UsersEntity? = null
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "admins_id")
-    var admins: Admins? = null
-)
+    @OneToMany(mappedBy = "racing", fetch = FetchType.LAZY)
+    var aspirants: MutableList<Aspirants> = mutableListOf()
+
+}

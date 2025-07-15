@@ -8,9 +8,12 @@ import java.util.Optional
 @Repository
 interface QuestionsRepository : JpaRepository<Questions, Long> {
 
-     fun findById(id: Long?): Optional<Questions>
+    fun findById(id: Long?): Optional<Questions>
+    fun findByRacingId(racingId: Long): List<Questions> // Preguntas específicas de una carrera
 
-    // Corrected methods to search by the foreign keys
-    fun findByAspirantsId(aspirantsId: Long): List<Questions>
-    fun findByAdminsId(adminsId: Long): List<Questions>
+    fun findByAspirantsId(aspirantsId: Long): List<Questions> // Si esta relación tiene sentido para tu lógica
+    fun findByProfessorId(professorId: Long): List<Questions> // <--- ¡AJUSTE CLAVE AQUÍ!
+
+    fun findByQuestionType(questionType: String): List<Questions> // Para preguntas generales o de un tipo específico
+    fun findByRacingIdAndQuestionType(racingId: Long, questionType: String): List<Questions> // Para preguntas de una carrera y un tipo específico
 }
