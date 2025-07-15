@@ -77,22 +77,28 @@ class QuestionsController {
 
         println("Profesor encontrado: ${professor.id}")
 
-        // ✅ Asignamos directamente el profesor autenticado al objeto pregunta
-        questions.professor = professor
-
-        // ⚠️ Validación básica para la carrera
         if (questions.racing == null || questions.racing?.id == null) {
             println("Error: La carrera es requerida")
             return ResponseEntity(HttpStatus.BAD_REQUEST)
         }
 
+        val racing = questionsService.findRacingById(questions.racing!!.id!!)
+        if (racing == null) {
+            println("Error: Carrera no encontrada")
+            return ResponseEntity(HttpStatus.BAD_REQUEST)
+        }
+
+        if (racing.professor?.id != professor.id) {
+            println("Error: Profesor no autorizado para esa carrera")
+            return ResponseEntity(HttpStatus.UNAUTHORIZED)
+        }
+
+        questions.professor = professor
+
         println("Todo ok, guardando pregunta...")
 
         return ResponseEntity(questionsService.saveSpecific(questions), HttpStatus.CREATED)
     }
-
-
-
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('profesor')")

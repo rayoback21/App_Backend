@@ -220,4 +220,7 @@ class QuestionsService {
         usersRepository.findByUsername(username)
             .orElse(null)
             ?.takeIf { user -> user.roles.any { it.roles == "profesor" } }
+
+    // <-- ESTE MÉTODO SE AGREGA PARA QUE TU CONTROLLER FUNCIONE CORRECTAMENTE -->
+    fun findRacingById(id: Long) = racingRepository.findById(id).orElse(null)
 }
