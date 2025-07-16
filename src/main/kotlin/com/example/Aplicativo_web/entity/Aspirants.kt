@@ -1,6 +1,8 @@
 package com.example.Aplicativo_web.entity
 
 import jakarta.persistence.*
+import com.fasterxml.jackson.annotation.JsonInclude // <-- AÑADIDO: Importación para JsonInclude
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties // <-- AÑADIDO: Importación para JsonIgnoreProperties
 
 @Entity
 @Table(name = "aspirants")
@@ -31,5 +33,7 @@ class Aspirants {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "racing_id", nullable = true)
+    @JsonIgnoreProperties("hibernateLazyInitializer", "handler") // <-- AÑADIDO: Para manejar proxies de Hibernate en la serialización
+    @JsonInclude(JsonInclude.Include.ALWAYS) // <-- AÑADIDO: Fuerza a Jackson a incluir 'racing' en el JSON, incluso si es null
     var racing: Racing? = null
 }

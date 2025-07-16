@@ -29,12 +29,31 @@ class QuestionsService {
         }
 
         questions.apply {
+            // Aseguramos que estos campos sean null para preguntas generales
+            // (La entidad Questions.kt ahora permite que sean nulos en la DB)
             softwareQ = null; designQ = null; gastronomyQ = null; marketingQ = null
             tourismQ = null; talentQ = null; nursingQ = null; electricityQ = null
-            accountingQ = null; networksQ = null; optionA = null; optionB = null
-            optionC = null; optionD = null; correctOption = null; questionType = null
-            professor = null; racing = null; aspirants = null
+            accountingQ = null; networksQ = null;
+            // Opciones y correctOption son enviados por el frontend, solo asignamos.
+            // Para preguntas generales, optionC/D pueden ser nulos si es V/F.
+            // correctOption siempre debería venir y se valida abajo.
+            // Los valores de optionA, optionB, correctOption, questionType, points
+            // se esperan directamente del payload y se validan a continuación.
+            professor = null; // Siempre null para preguntas generales
+            racing = null;    // Siempre null para preguntas generales
+            aspirants = null // Siempre null para preguntas generales
         }
+
+        // Validación de opciones y correctOption para preguntas generales
+        // Asumiendo que para preguntas generales siempre vienen correctOption, optionA, optionB
+        if (questions.optionA.isNullOrBlank() || questions.optionB.isNullOrBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Las opciones A y B son obligatorias para preguntas generales.")
+        }
+        // Validar correctOption para preguntas generales
+        if (questions.correctOption == null || !listOf("A", "B", "C", "D").contains(questions.correctOption)) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe seleccionar una opción correcta válida (A, B, C o D) para preguntas generales.")
+        }
+
 
         return questionsRepository.save(questions)
     }
@@ -71,12 +90,15 @@ class QuestionsService {
         if (questions.questionType == "true-false") {
             if (questions.optionA.isNullOrBlank() || questions.optionB.isNullOrBlank())
                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Opciones A y B obligatorias para verdadero/falso.")
-        } else {
+            // Para V/F, optionC y optionD pueden ser nulos, no es necesario validarlos aquí.
+        } else { // Asumimos "multiple-choice"
+            // Se asume que para "multiple-choice", optionC y optionD siempre tienen texto.
             if (listOf(questions.optionA, questions.optionB, questions.optionC, questions.optionD).any { it.isNullOrBlank() })
-                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Todas las opciones deben tener texto.")
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Todas las opciones deben tener texto para preguntas de opción múltiple.")
         }
 
-        if (questions.correctOption == null || !listOf('A', 'B', 'C', 'D').contains(questions.correctOption)) {
+        // LÓGICA CLAVE: Cambiar la lista de Char a String para que coincida con questions.correctOption (String?)
+        if (questions.correctOption == null || !listOf("A", "B", "C", "D").contains(questions.correctOption)) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe seleccionar una opción correcta válida (A, B, C o D).")
         }
 
@@ -94,12 +116,23 @@ class QuestionsService {
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Pregunta no encontrada con ID: ${questions.id}")
 
         existingQuestion.apply {
+            // Se limpian los campos de carrera/texto general para evitar conflictos al actualizar.
+            // Esto es crucial para que la pregunta mantenga su tipo (general o específica).
+            // Si la pregunta que se actualiza es general, estos se mantendrán nulos.
+            // Si es específica, los campos de texto específico y racing/professor se mantendrán.
+            // Para evitar nullificar campos que no deberían serlo si la pregunta no cambia de tipo
+            // la lógica aquí puede ser un poco más sofisticada o manejarlo en el DTO/controlador.
+            // Por ahora, se asume que si el cliente envía null, se establece a null.
             softwareQ = null; designQ = null; gastronomyQ = null; marketingQ = null
             tourismQ = null; talentQ = null; nursingQ = null; electricityQ = null
-            accountingQ = null; networksQ = null; optionA = null; optionB = null
-            optionC = null; optionD = null; correctOption = null; questionType = null
+            accountingQ = null; networksQ = null;
+            // Las opciones y correctOption no se deberían nullificar aquí indiscriminadamente
+            // porque son parte de la pregunta en sí. Solo se actualizan si se envían valores nuevos.
 
-            text = questions.text?.takeIf { it.isNotBlank() }
+
+            text = questions.text?.takeIf { it.isNotBlank() } // Actualiza solo si no es nulo/vacío
+
+            // Actualiza los campos específicos de carrera solo si se proporcionan
             softwareQ = questions.softwareQ?.takeIf { it.isNotBlank() }
             designQ = questions.designQ?.takeIf { it.isNotBlank() }
             gastronomyQ = questions.gastronomyQ?.takeIf { it.isNotBlank() }
@@ -111,14 +144,17 @@ class QuestionsService {
             accountingQ = questions.accountingQ?.takeIf { it.isNotBlank() }
             networksQ = questions.networksQ?.takeIf { it.isNotBlank() }
 
+            // Actualiza opciones solo si se proporcionan
             optionA = questions.optionA?.takeIf { it.isNotBlank() }
             optionB = questions.optionB?.takeIf { it.isNotBlank() }
             optionC = questions.optionC?.takeIf { it.isNotBlank() }
             optionD = questions.optionD?.takeIf { it.isNotBlank() }
-            correctOption = questions.correctOption?.takeIf { it.toString().isNotBlank() }
+            correctOption = questions.correctOption?.takeIf { it.isNotBlank() } // Usar isNotBlank() para String
 
             questionType = questions.questionType?.takeIf { it.isNotBlank() }
 
+            // Lógica para actualizar profesor y carrera si se envían.
+            // Se mantiene el valor existente si no se proporciona uno nuevo.
             professor = questions.professor?.id?.let {
                 usersRepository.findById(it).orElse(null)
                     ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Profesor no encontrado con ID: $it")
@@ -151,11 +187,13 @@ class QuestionsService {
 
         question.apply {
             text = newText
-            softwareQ = null; designQ = null; gastronomyQ = null; marketingQ = null
-            tourismQ = null; talentQ = null; nursingQ = null; electricityQ = null
-            accountingQ = null; networksQ = null; optionA = null; optionB = null
-            optionC = null; optionD = null; correctOption = null; questionType = null
-            professor = null; racing = null
+            // Al actualizar solo el texto general, los campos específicos de carrera
+            // y las opciones (incluyendo correctOption), profesor y racing se mantienen.
+            // No se deben nullificar indiscriminadamente aquí.
+            // Si el objetivo es convertir una pregunta específica en general (o viceversa)
+            // se necesita una lógica de negocio más explícita o un endpoint diferente.
+            // Por ahora, solo se actualiza el texto principal.
+            // Si estos campos deben ser null, el cliente debe enviarlos como null en el PATCH.
         }
 
         return questionsRepository.save(question)
