@@ -18,7 +18,7 @@ class JwtUtil(
 
     fun create(username: String?): String? {
         val userEntity = usersRepository.findByUsername(username ?: throw IllegalArgumentException("Username cannot be null"))
-            .orElseThrow { IllegalArgumentException("User with username '$username' not found.") }
+            ?: throw IllegalArgumentException("User with username '$username' not found.")
 
         val rolesArray: Array<String> = userEntity.roles
             .mapNotNull { it.roles }

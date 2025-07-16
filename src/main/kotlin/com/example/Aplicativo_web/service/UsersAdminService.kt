@@ -29,12 +29,13 @@ class UsersAdminService : UserDetailsService {
 
     override fun loadUserByUsername(username: String): UserDetails {
         println("UsersAdminService: loadUserByUsername llamado para: $username")
+
         if (usersRepository.count() == 0L) {
             throw IllegalStateException("No hay usuarios registrados. Cree el primer usuario desde el formulario de registro.")
         }
 
         val userEntity = usersRepository.findByUsername(username)
-            .orElseThrow { UsernameNotFoundException("Usuario '$username' no encontrado") }
+            ?: throw UsernameNotFoundException("Usuario '$username' no encontrado")
 
         val usernameNonNull = userEntity.username ?: throw IllegalStateException("Username no puede ser null")
         val passwordNonNull = userEntity.password ?: throw IllegalStateException("Password no puede ser null")
@@ -52,6 +53,7 @@ class UsersAdminService : UserDetailsService {
     @Transactional
     fun register(registerDto: RegisterDto): UsersEntity {
         println("UsersAdminService: register llamado para: ${registerDto.username}")
+
         val encodedPassword = registerDto.password?.let { BCryptPasswordEncoder().encode(it) }
             ?: throw IllegalArgumentException("Password no puede ser null")
 
@@ -86,40 +88,41 @@ class UsersAdminService : UserDetailsService {
 
     fun findUserIdByUsername(username: String): Long {
         println("UsersAdminService: findUserIdByUsername llamado para: $username")
+
         val user = usersRepository.findByUsername(username)
-            .orElseThrow { RuntimeException("Usuario no encontrado con username: $username") }
+            ?: throw RuntimeException("Usuario no encontrado con username: $username")
+
         return user.id ?: throw RuntimeException("Usuario sin ID")
     }
 
     fun findByUsername(username: String): UsersEntity? {
         println("UsersAdminService: findByUsername (para controlador) llamado para: $username")
-        return usersRepository.findByUsername(username).orElse(null)
+        return usersRepository.findByUsername(username)
     }
 
     @Transactional
     fun updatePhotoUrl(userId: Long, photoUrl: String): UsersEntity {
         println("UsersAdminService: updatePhotoUrl llamado para userId: $userId con URL: $photoUrl")
-        val user = usersRepository.findById(userId)
-            .orElseThrow {
-                println("UsersAdminService: Usuario con ID $userId no encontrado para actualizar foto.")
-                ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado con ID: $userId")
-            }
+
+        val user = usersRepository.findById(userId).orElse(null)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado con ID: $userId")
 
         user.photoUrl = photoUrl
-        println("UsersAdminService: photoUrl de la entidad establecida a: ${user.photoUrl}")
         val savedUser = usersRepository.save(user)
-        println("UsersAdminService: Usuario con ID $userId guardado en el repositorio. photoUrl después de guardar: ${savedUser.photoUrl}")
+
+        println("UsersAdminService: Usuario con ID $userId guardado con nueva foto: ${savedUser.photoUrl}")
         return savedUser
     }
 
     fun listAllUsersWithRoles(): List<UserProfileDto> {
         println("UsersAdminService: listAllUsersWithRoles llamado.")
+
         return usersRepository.findAll().map { user ->
             UserProfileDto(
                 id = user.id ?: 0L,
                 username = user.username ?: "N/A",
                 email = user.email ?: "N/A",
-                roles = user.roles.mapNotNull { it.roles }.toList(),
+                roles = user.roles.mapNotNull { it.roles },
                 photoUrl = user.photoUrl
             )
         }

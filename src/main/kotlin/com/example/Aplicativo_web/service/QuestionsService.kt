@@ -15,17 +15,10 @@ import org.springframework.web.server.ResponseStatusException
 @Service
 class QuestionsService {
 
-    @Autowired
-    lateinit var questionsRepository: QuestionsRepository
-
-    @Autowired
-    lateinit var aspirantsRepository: AspirantsRepository
-
-    @Autowired
-    lateinit var usersRepository: UsersRepository
-
-    @Autowired
-    lateinit var racingRepository: RacingRepository
+    @Autowired lateinit var questionsRepository: QuestionsRepository
+    @Autowired lateinit var aspirantsRepository: AspirantsRepository
+    @Autowired lateinit var usersRepository: UsersRepository
+    @Autowired lateinit var racingRepository: RacingRepository
 
     fun list(): List<Questions> = questionsRepository.findAll()
 
@@ -36,40 +29,25 @@ class QuestionsService {
         }
 
         questions.apply {
-            softwareQ = null
-            designQ = null
-            gastronomyQ = null
-            marketingQ = null
-            tourismQ = null
-            talentQ = null
-            nursingQ = null
-            electricityQ = null
-            accountingQ = null
-            networksQ = null
-            optionA = null
-            optionB = null
-            optionC = null
-            optionD = null
-            correctOption = null
-            questionType = null
-            professor = null
-            racing = null
-            aspirants = null
+            softwareQ = null; designQ = null; gastronomyQ = null; marketingQ = null
+            tourismQ = null; talentQ = null; nursingQ = null; electricityQ = null
+            accountingQ = null; networksQ = null; optionA = null; optionB = null
+            optionC = null; optionD = null; correctOption = null; questionType = null
+            professor = null; racing = null; aspirants = null
         }
+
         return questionsRepository.save(questions)
     }
 
     @Transactional
     fun saveSpecific(questions: Questions): Questions {
-        if (questions.professor?.id == null)
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta id del profesor")
-        if (questions.racing?.id == null)
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta id de la carrera")
-
-        // Validación que la carrera pertenece al profesor autenticado
         val professorId = questions.professor?.id
-        val racing = racingRepository.findById(questions.racing!!.id!!)
-            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Carrera no encontrada") }
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta id del profesor")
+        val racingId = questions.racing?.id
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta id de la carrera")
+
+        val racing = racingRepository.findById(racingId).orElse(null)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Carrera no encontrada")
 
         if (racing.professor?.id != professorId) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Esta carrera no pertenece al profesor autenticado.")
@@ -78,20 +56,16 @@ class QuestionsService {
         questions.racing = racing
         questions.text = null
 
-        val questionTextForRace = questions.softwareQ ?: questions.designQ ?: questions.gastronomyQ ?: questions.marketingQ
-        ?: questions.tourismQ ?: questions.talentQ ?: questions.nursingQ ?: questions.electricityQ
-        ?: questions.accountingQ ?: questions.networksQ
-
-        if (questionTextForRace.isNullOrBlank())
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe ingresar el texto de la pregunta para la carrera.")
-
-        val nonNullQuestionFields = listOfNotNull(
+        val questionTextForRace = listOfNotNull(
             questions.softwareQ, questions.designQ, questions.gastronomyQ, questions.marketingQ,
             questions.tourismQ, questions.talentQ, questions.nursingQ, questions.electricityQ,
             questions.accountingQ, questions.networksQ
         ).filter { it.isNotBlank() }
 
-        if (nonNullQuestionFields.size != 1)
+        if (questionTextForRace.isEmpty())
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe ingresar el texto de la pregunta para la carrera.")
+
+        if (questionTextForRace.size != 1)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo debe especificarse el texto para UNA carrera.")
 
         if (questions.questionType == "true-false") {
@@ -116,51 +90,48 @@ class QuestionsService {
 
     @Transactional
     fun update(questions: Questions): Questions {
-        val existingQuestion = questionsRepository.findById(questions.id)
-            .orElseThrow {
-                ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Pregunta no encontrada con ID: ${questions.id}")
-            }
+        val existingQuestion = questions.id?.let { questionsRepository.findById(it).orElse(null) }
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Pregunta no encontrada con ID: ${questions.id}")
 
         existingQuestion.apply {
-            text = null; softwareQ = null; designQ = null; gastronomyQ = null; marketingQ = null
+            softwareQ = null; designQ = null; gastronomyQ = null; marketingQ = null
             tourismQ = null; talentQ = null; nursingQ = null; electricityQ = null
             accountingQ = null; networksQ = null; optionA = null; optionB = null
             optionC = null; optionD = null; correctOption = null; questionType = null
 
-            text = questions.text.takeIf { !it.isNullOrBlank() }
-            softwareQ     = questions.softwareQ.takeIf     { !it.isNullOrBlank() }
-            designQ       = questions.designQ.takeIf       { !it.isNullOrBlank() }
-            gastronomyQ   = questions.gastronomyQ.takeIf   { !it.isNullOrBlank() }
-            marketingQ    = questions.marketingQ.takeIf    { !it.isNullOrBlank() }
-            tourismQ      = questions.tourismQ.takeIf      { !it.isNullOrBlank() }
-            talentQ       = questions.talentQ.takeIf       { !it.isNullOrBlank() }
-            nursingQ      = questions.nursingQ.takeIf      { !it.isNullOrBlank() }
-            electricityQ  = questions.electricityQ.takeIf  { !it.isNullOrBlank() }
-            accountingQ   = questions.accountingQ.takeIf   { !it.isNullOrBlank() }
-            networksQ     = questions.networksQ.takeIf     { !it.isNullOrBlank() }
+            text = questions.text?.takeIf { it.isNotBlank() }
+            softwareQ = questions.softwareQ?.takeIf { it.isNotBlank() }
+            designQ = questions.designQ?.takeIf { it.isNotBlank() }
+            gastronomyQ = questions.gastronomyQ?.takeIf { it.isNotBlank() }
+            marketingQ = questions.marketingQ?.takeIf { it.isNotBlank() }
+            tourismQ = questions.tourismQ?.takeIf { it.isNotBlank() }
+            talentQ = questions.talentQ?.takeIf { it.isNotBlank() }
+            nursingQ = questions.nursingQ?.takeIf { it.isNotBlank() }
+            electricityQ = questions.electricityQ?.takeIf { it.isNotBlank() }
+            accountingQ = questions.accountingQ?.takeIf { it.isNotBlank() }
+            networksQ = questions.networksQ?.takeIf { it.isNotBlank() }
 
-            optionA = questions.optionA.takeIf { !it.isNullOrBlank() }
-            optionB = questions.optionB.takeIf { !it.isNullOrBlank() }
-            optionC = questions.optionC.takeIf { !it.isNullOrBlank() }
-            optionD = questions.optionD.takeIf { !it.isNullOrBlank() }
-            correctOption = questions.correctOption.takeIf { it != null && !it.toString().isBlank() }
+            optionA = questions.optionA?.takeIf { it.isNotBlank() }
+            optionB = questions.optionB?.takeIf { it.isNotBlank() }
+            optionC = questions.optionC?.takeIf { it.isNotBlank() }
+            optionD = questions.optionD?.takeIf { it.isNotBlank() }
+            correctOption = questions.correctOption?.takeIf { it.toString().isNotBlank() }
 
-            questionType  = questions.questionType.takeIf  { !it.isNullOrBlank() }
+            questionType = questions.questionType?.takeIf { it.isNotBlank() }
 
-            professor = questions.professor?.id?.let { pid ->
-                usersRepository.findById(pid)
-                    .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Profesor no encontrado con ID: $pid") }
+            professor = questions.professor?.id?.let {
+                usersRepository.findById(it).orElse(null)
+                    ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Profesor no encontrado con ID: $it")
             } ?: professor
 
-            racing = questions.racing?.id?.let { rid ->
-                racingRepository.findById(rid)
-                    .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Carrera no encontrada con ID: $rid") }
+            racing = questions.racing?.id?.let {
+                racingRepository.findById(it).orElse(null)
+                    ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Carrera no encontrada con ID: $it")
             } ?: racing
 
-            aspirants = questions.aspirants?.id?.let { aid ->
-                aspirantsRepository.findById(aid)
-                    .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Aspirante no encontrado con ID: $aid") }
+            aspirants = questions.aspirants?.id?.let {
+                aspirantsRepository.findById(it).orElse(null)
+                    ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Aspirante no encontrado con ID: $it")
             }
         }
 
@@ -172,8 +143,8 @@ class QuestionsService {
 
     @Transactional
     fun updateText(id: Long, newText: String): Questions {
-        val question = questionsRepository.findById(id)
-            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Pregunta no encontrada con ID: $id") }
+        val question = questionsRepository.findById(id).orElse(null)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Pregunta no encontrada con ID: $id")
 
         if (newText.isBlank())
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "El texto no puede estar vacío.")
@@ -192,18 +163,18 @@ class QuestionsService {
 
     @Transactional
     fun delete(id: Long) {
-        val question = questionsRepository.findById(id)
-            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Pregunta no existe con el Id: $id") }
+        val question = questionsRepository.findById(id).orElse(null)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Pregunta no existe con el Id: $id")
         questionsRepository.delete(question)
     }
 
     fun getQuestionById(id: Long): Questions =
-        questionsRepository.findById(id)
-            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Pregunta no encontrada con ID: $id") }
+        questionsRepository.findById(id).orElse(null)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Pregunta no encontrada con ID: $id")
 
     fun getQuestionsByAspirantId(aspirantId: Long): List<Questions> {
-        aspirantsRepository.findById(aspirantId)
-            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Aspirante no encontrado con ID: $aspirantId") }
+        aspirantsRepository.findById(aspirantId).orElse(null)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Aspirante no encontrado con ID: $aspirantId")
         return questionsRepository.findByAspirantsId(aspirantId)
     }
 
@@ -211,16 +182,15 @@ class QuestionsService {
         questionsRepository.findByRacingId(racingId)
 
     fun getQuestionsByProfessorId(professorId: Long): List<Questions> {
-        usersRepository.findById(professorId)
-            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Profesor no encontrado con ID: $professorId") }
+        usersRepository.findById(professorId).orElse(null)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Profesor no encontrado con ID: $professorId")
         return questionsRepository.findByProfessorId(professorId)
     }
 
     fun findProfessorByUsername(username: String): UsersEntity? =
         usersRepository.findByUsername(username)
-            .orElse(null)
             ?.takeIf { user -> user.roles.any { it.roles == "profesor" } }
 
-    // <-- ESTE MÉTODO SE AGREGA PARA QUE TU CONTROLLER FUNCIONE CORRECTAMENTE -->
-    fun findRacingById(id: Long) = racingRepository.findById(id).orElse(null)
+    fun findRacingById(id: Long) =
+        racingRepository.findById(id).orElse(null)
 }

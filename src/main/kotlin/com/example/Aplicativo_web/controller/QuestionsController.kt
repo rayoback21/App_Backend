@@ -77,19 +77,21 @@ class QuestionsController {
 
         println("Profesor encontrado: ${professor.id}")
 
+        // Imprimir carreras asociadas al profesor
+        println("Carreras del profesor:")
+        professor.racings.forEach { println(" - ID: ${it.id}, Carrera: ${it.career}") }
+
         if (questions.racing == null || questions.racing?.id == null) {
             println("Error: La carrera es requerida")
             return ResponseEntity(HttpStatus.BAD_REQUEST)
         }
 
-        val racing = questionsService.findRacingById(questions.racing!!.id!!)
-        if (racing == null) {
-            println("Error: Carrera no encontrada")
-            return ResponseEntity(HttpStatus.BAD_REQUEST)
-        }
+        val requestedRacingId = questions.racing!!.id!!
 
-        if (racing.professor?.id != professor.id) {
-            println("Error: Profesor no autorizado para esa carrera")
+        // Validar que la carrera esté en la lista de carreras del profesor
+        val isCareerAuthorized = professor.racings.any { it.id == requestedRacingId }
+        if (!isCareerAuthorized) {
+            println("Error: Profesor no autorizado para esa carrera (ID: $requestedRacingId)")
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
 
