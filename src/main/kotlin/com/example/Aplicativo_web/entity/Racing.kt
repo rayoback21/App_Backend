@@ -1,6 +1,7 @@
 package com.example.Aplicativo_web.entity
 
 import com.fasterxml.jackson.annotation.JsonBackReference
+import com.fasterxml.jackson.annotation.JsonManagedReference // <-- Puede que necesites esta si hay ciclo con UsersEntity
 import jakarta.persistence.*
 import com.example.Aplicativo_web.entity.UsersEntity
 
@@ -14,13 +15,12 @@ class Racing {
 
     var career: String? = null
 
-    // MODIFICACIÓN: Cambié FetchType.LAZY a FetchType.EAGER para que el profesor se cargue siempre y evitar problemas de null
-    @ManyToOne(fetch = FetchType.EAGER)  // <-- Aquí está el cambio
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "professor_id")
-    @JsonBackReference
+    @JsonBackReference // <-- Dejar si UsersEntity tiene @JsonManagedReference para una lista de Racing
     var professor: UsersEntity? = null
 
     @OneToMany(mappedBy = "racing", fetch = FetchType.LAZY)
+    @JsonBackReference // <-- AÑADIR esta anotación aquí para romper el ciclo con Aspirants
     var aspirants: MutableList<Aspirants> = mutableListOf()
-
 }

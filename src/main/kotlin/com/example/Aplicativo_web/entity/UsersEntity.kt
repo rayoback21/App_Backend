@@ -1,6 +1,7 @@
 package com.example.Aplicativo_web.entity
 
-import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonManagedReference
+import com.fasterxml.jackson.annotation.JsonIgnore // Importación necesaria para @JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import jakarta.persistence.*
 
@@ -23,10 +24,10 @@ class UsersEntity {
     var photoUrl: String? = null
 
     @OneToMany(mappedBy = "professor")
-    @JsonIgnore
+    @JsonManagedReference
     var questions: MutableList<Questions> = mutableListOf()
 
     @OneToMany(mappedBy = "professor")
-    @JsonIgnore
+    @JsonIgnore // Cambiado de @JsonManagedReference a @JsonIgnore
     var racings: MutableList<Racing> = mutableListOf()
 }
